@@ -15,7 +15,7 @@ library(tidyverse)
 
 week_8 <- trains %>% 
   mutate(att_chg = att_end - att_start) %>% 
-  select(att_chg, gender, party, treatment)
+  select(att_chg, gender, liberal, treatment)
   
 ```
 
@@ -30,12 +30,25 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 * `att_chg` as a function of `gender`
 
+```{r}
+stan_glm(att_chg ~ gender -1, data = week_8, refresh = 0)
+```
+
 
 * `att_chg` as a function of `liberal`
+
+```{r}
+stan_glm(att_chg ~ liberal -1, data = week_8, refresh = 0)
+```
 
 
 * `att_chg` as a function of `treatment`
 
+```{r}
+fit_obj <- stan_glm(att_chg ~ treatment -1, data = week_8, refresh = 0)
+
+fit_obj
+```
 
 
 
@@ -44,6 +57,23 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 **Prompt:** For the model with `att_chg` as a function of `treatment`, create posterior probability densities for the two important parameters. Write a paragraph interpreting the meaning of those posteriors. 
 
+```{r}
+fit_obj %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = treatmentTreated:treatmentControl,
+               names_to = "parameter",
+               values_to = "change") %>%
+  ggplot(aes(x = change, fill = parameter)) +
+    geom_histogram(aes(y = after_stat(count/sum(count))), 
+                   bins = 100, 
+                   alpha = 0.8,
+                   position = "identity") +
+    labs(title = "Posterior Probability Distributions",
+         subtitle = "Average change in attitude toward immigration",
+         x = "Average Attitude Change",
+         y = "Probability") +
+    theme_classic()
+```
 
 
 
@@ -51,5 +81,15 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 **Prompt:** Create a plot of the the posterior for the average treatment effect. Write a paragraph interpreting the plot.
 
+```{r}
+fit_obj %>% 
+  as_tibble() %>%
+  mutate(diff = treatmentTreated - treatmentControl) %>% 
+  ggplot(aes(x = diff)) +
+    geom_histogram(aes(y = after_stat(count / sum(count))), bins = 30)
+```
+Treatment effect for an individual is the diference in their attitude chaneg bewteen two potential outcomes
+(treatment and control). The average treatment effetc is the average across the population of interest of the
+individual treatment effects.
 
 
